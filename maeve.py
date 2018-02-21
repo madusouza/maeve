@@ -45,7 +45,6 @@ def pje1g(usuario,senha,url_login):
     # Login
     start = time.time()
     driver.get(url_login)
-    driver.save_screenshot(screenshot('pagina-login','pje1g'))
     user = driver.find_element_by_id('username')
     user.send_keys(usuario)
     password = driver.find_element_by_id('password')
@@ -59,7 +58,6 @@ def pje1g(usuario,senha,url_login):
         tempo_login = end - start
         zbx_enviar('PJe 1Grau','tempo_login',tempo_login)
         print('Tempo login: ' + str(tempo_login))
-        print(driver.current_url)
 
         try:
             start = time.time()
@@ -73,7 +71,6 @@ def pje1g(usuario,senha,url_login):
             menu_pesquisar_n2 = wait.until(EC.visibility_of_element_located((By.ID, '_1009_j_id70j_id76')))
             ActionChains(driver).move_to_element(menu_pesquisar_n2).click().perform()
             wait.until(EC.visibility_of_element_located((By.ID, 'fPP:consultaSearchFields_header')))
-            # print("Estou na url %s" % (driver.current_url))
 
             # Preenchimento do formulário de pesquisa
             num_sequencial = driver.find_element_by_id('fPP:numeroProcesso:numeroSequencial')
@@ -92,16 +89,21 @@ def pje1g(usuario,senha,url_login):
             zbx_enviar('PJe 1Grau', 'tempo_pesquisa', tempo_pesquisa)
             print("Tempo pesquisa: " + str(tempo_pesquisa))
 
-            # Logout
-            start = time.time()
-            logout = driver.find_element_by_id('desconectar')
-            logout.click()
-            end = time.time()
-            tempo_logout = end - start
-            zbx_enviar('PJe 1Grau', 'tempo_logout', tempo_logout)
-            print('Tempo logout: ' + str(tempo_logout))
+            try:
+                # Logout
+                start = time.time()
+                logout = driver.find_element_by_id('desconectar')
+                logout.click()
+                end = time.time()
+                tempo_logout = end - start
+                zbx_enviar('PJe 1Grau', 'tempo_logout', tempo_logout)
+                print('Tempo logout: ' + str(tempo_logout))
+                driver.quit()
 
-            driver.quit()
+            except Exception:
+                zbx_enviar('PJe 1Grau', 'tempo_logout', 0)
+                driver.save_screenshot(screenshot('logout-falha', 'pje1g'))
+                driver.quit()
 
         except Exception:
             zbx_enviar('PJe 1Grau', 'tempo_pesquisa', 0)
@@ -111,6 +113,7 @@ def pje1g(usuario,senha,url_login):
 
     except Exception:
         zbx_enviar('PJe 1Grau', 'tempo_login', 0)
+        zbx_enviar('PJe 1Grau', 'tempo_logout', 0)
         driver.save_screenshot(screenshot('login-falha','pje1g'))
         print("O login falhou.")
         driver.quit()
