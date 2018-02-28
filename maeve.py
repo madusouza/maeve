@@ -8,11 +8,13 @@ from pyzabbix import ZabbixMetric, ZabbixSender
 import configparser
 import time
 import platform
+import os
 
 
 def setup():
     driver = webdriver.PhantomJS(service_args=['--ignore-ssl-errors=true'])
     driver.set_window_size(1920, 1080)
+    driver.set_page_load_timeout(15)
     return driver
 
 
@@ -28,7 +30,13 @@ def screenshot(nome_arquivo,sistema):
 
 
 def limpar_arquivos():
-    pass
+    data_hora = time.time()
+
+    for f in os.listdir(path='.\\screenshots\\pje1g\\'):
+        data_criacao = os.path.getctime(f)
+        if (data_hora - data_criacao) // (24 * 3600) >= 7:
+            os.unlink(f)
+            print('{} removido'.format(f))
 
 
 def zbx_enviar(host,chave,valor):
@@ -41,17 +49,18 @@ def zbx_enviar(host,chave,valor):
 
 def pje1g(usuario,senha,url_login):
     driver = setup()
-
-    # Login
-    start = time.time()
-    driver.get(url_login)
-    user = driver.find_element_by_id('username')
-    user.send_keys(usuario)
-    password = driver.find_element_by_id('password')
-    password.send_keys(senha)
-    password.submit()
+    wait = WebDriverWait(driver, 10)
 
     try:
+        # Login
+        start = time.time()
+        driver.get(url_login)
+        user = driver.find_element_by_id('username')
+        user.send_keys(usuario)
+        password = driver.find_element_by_id('password')
+        password.send_keys(senha)
+        password.submit()
+
         # Verifica se logou
         driver.find_element_by_class_name('usuario-logado')
         end = time.time()
@@ -61,7 +70,6 @@ def pje1g(usuario,senha,url_login):
 
         try:
             start = time.time()
-            wait = WebDriverWait(driver, 10)
 
             # Navegação no menu para entrar na pesquisa
             menu_processo = wait.until(EC.visibility_of_element_located((By.ID, '_1007_j_id70j_id71')))
@@ -114,24 +122,27 @@ def pje1g(usuario,senha,url_login):
     except Exception:
         zbx_enviar('PJe 1Grau', 'tempo_login', 0)
         zbx_enviar('PJe 1Grau', 'tempo_logout', 0)
+        zbx_enviar('PJe 1Grau', 'tempo_pesquisa', 0)
         driver.save_screenshot(screenshot('login-falha','pje1g'))
         print("O login falhou.")
         driver.quit()
 
 
 def main():
-    try:
-        credenciais = configparser.ConfigParser()
-        credenciais.read('credenciais.conf')
-        usuario = credenciais.get('Credenciais', 'usuario')
-        senha = credenciais.get('Credenciais', 'senha')
-        url_login = 'https://pje.tjrn.jus.br/pje1grau/'
-        pje1g(usuario,senha,url_login)
-        return 0
+    # try:
+    # os.chdir(os.path.dirname(sys.argv[0]))
+    credenciais = configparser.ConfigParser()
+    credenciais.read('credenciais.conf')
+    usuario = credenciais.get('Credenciais', 'usuario')
+    senha = credenciais.get('Credenciais', 'senha')
+    url_login = 'https://pje.tjrn.jus.br/pje1grau/'
+    pje1g(usuario,senha,url_login)
+    # limpar_arquivos()
+        # return 0
 
-    except Exception:
-        return 1
+    # except Exception:
+    #    return 1
 
 
 if __name__ == '__main__':
-    exit(main())
+    main()
