@@ -7,36 +7,13 @@ from selenium.webdriver.support.wait import WebDriverWait
 from pyzabbix import ZabbixMetric, ZabbixSender
 import configparser
 import time
-import platform
 import os
-
 
 def setup():
     driver = webdriver.PhantomJS(service_args=['--ignore-ssl-errors=true'])
     driver.set_window_size(1920, 1080)
     driver.set_page_load_timeout(15)
     return driver
-
-
-def screenshot(nome_arquivo,sistema):
-    if platform.system() == 'Windows':
-        path = 'screenshots\\' + sistema + '\\'
-    else:
-        path = 'screenshots/' + sistema + '/'
-
-    data_hora = time.strftime('%Y-%m-%d_%H%M%S')
-    arquivo_screenshot = path + nome_arquivo + '_' + data_hora + '.png'
-    return arquivo_screenshot
-
-
-def limpar_arquivos():
-    data_hora = time.time()
-
-    for f in os.listdir(path='.\\screenshots\\pje1g\\'):
-        data_criacao = os.path.getctime(f)
-        if (data_hora - data_criacao) // (24 * 3600) >= 7:
-            os.unlink(f)
-            print('{} removido'.format(f))
 
 
 def zbx_enviar(host,chave,valor):
@@ -69,6 +46,7 @@ def pje1g(usuario,senha,url_login):
         print('Tempo login: ' + str(tempo_login))
 
         try:
+            # Pesquisa
             start = time.time()
 
             # Navegação no menu para entrar na pesquisa
@@ -110,12 +88,10 @@ def pje1g(usuario,senha,url_login):
 
             except Exception:
                 zbx_enviar('PJe 1Grau', 'tempo_logout', 0)
-                driver.save_screenshot(screenshot('logout-falha', 'pje1g'))
                 driver.quit()
 
         except Exception:
             zbx_enviar('PJe 1Grau', 'tempo_pesquisa', 0)
-            driver.save_screenshot(screenshot('pesquisa-falha','pje1g'))
             print("A pesquisa falhou.")
             driver.quit()
 
@@ -123,26 +99,24 @@ def pje1g(usuario,senha,url_login):
         zbx_enviar('PJe 1Grau', 'tempo_login', 0)
         zbx_enviar('PJe 1Grau', 'tempo_logout', 0)
         zbx_enviar('PJe 1Grau', 'tempo_pesquisa', 0)
-        driver.save_screenshot(screenshot('login-falha','pje1g'))
         print("O login falhou.")
         driver.quit()
 
 
 def main():
-    # try:
-    # os.chdir(os.path.dirname(sys.argv[0]))
-    credenciais = configparser.ConfigParser()
-    credenciais.read('credenciais.conf')
-    usuario = credenciais.get('Credenciais', 'usuario')
-    senha = credenciais.get('Credenciais', 'senha')
-    url_login = 'https://pje.tjrn.jus.br/pje1grau/'
-    pje1g(usuario,senha,url_login)
-    # limpar_arquivos()
-        # return 0
+    try:
+        os.chdir(os.path.dirname(__file__))
+        credenciais = configparser.ConfigParser()
+        credenciais.read('credenciais.conf')
+        usuario = credenciais.get('Credenciais', 'usuario')
+        senha = credenciais.get('Credenciais', 'senha')
+        url_login = 'https://pje.tjrn.jus.br/pje1grau/'
+        pje1g(usuario,senha,url_login)
+        return 0
 
-    # except Exception:
-    #    return 1
+    except Exception:
+        return 1
 
 
 if __name__ == '__main__':
-    main()
+    exit(main())
