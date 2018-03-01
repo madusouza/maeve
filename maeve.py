@@ -80,6 +80,7 @@ def pje1g(usuario,senha,url_login):
                 start = time.time()
                 logout = driver.find_element_by_id('desconectar')
                 logout.click()
+                wait.until(EC.visibility_of_element_located((By.ID, 'username')))
                 end = time.time()
                 tempo_logout = end - start
                 zbx_enviar('PJe 1Grau', 'tempo_logout', tempo_logout)
