@@ -8,6 +8,9 @@ from pyzabbix import ZabbixMetric, ZabbixSender
 import configparser
 import time
 import os
+import logging
+
+logging.basicConfig(filename='maeve.log', level=logging.NOTSET, filemode='w')
 
 def setup():
     driver = webdriver.PhantomJS(service_args=['--ignore-ssl-errors=true'])
@@ -24,14 +27,19 @@ def zbx_enviar(host,chave,valor):
     zbx.send(metrics)
 
 
-def pje1g(usuario,senha,url_login):
+def pje1g():
     driver = setup()
     wait = WebDriverWait(driver, 10)
+    config = configparser.ConfigParser()
+    config.read('maeve.conf')
+    usuario = config.get('PJe1G', 'usuario')
+    senha = config.get('PJe1G', 'senha')
+    url = config.get('PJe1G', 'url')
 
     try:
         # Login
         start = time.time()
-        driver.get(url_login)
+        driver.get(url)
         user = driver.find_element_by_id('username')
         user.send_keys(usuario)
         password = driver.find_element_by_id('password')
@@ -43,79 +51,77 @@ def pje1g(usuario,senha,url_login):
         end = time.time()
         tempo_login = end - start
         zbx_enviar('PJe 1Grau','tempo_login',tempo_login)
-        print('Tempo login: ' + str(tempo_login))
-
-        try:
-            # Pesquisa
-            start = time.time()
-
-            # Navegação no menu para entrar na pesquisa
-            menu_processo = wait.until(EC.visibility_of_element_located((By.ID, '_1007_j_id70j_id71')))
-            ActionChains(driver).move_to_element(menu_processo).perform()
-            menu_pesquisar_n1 = wait.until(EC.visibility_of_element_located((By.ID, '_1008_j_id70j_id75')))
-            ActionChains(driver).move_to_element(menu_pesquisar_n1).perform()
-            menu_pesquisar_n2 = wait.until(EC.visibility_of_element_located((By.ID, '_1009_j_id70j_id76')))
-            ActionChains(driver).move_to_element(menu_pesquisar_n2).click().perform()
-            wait.until(EC.visibility_of_element_located((By.ID, 'fPP:consultaSearchFields_header')))
-
-            # Preenchimento do formulário de pesquisa
-            num_sequencial = driver.find_element_by_id('fPP:numeroProcesso:numeroSequencial')
-            num_sequencial.send_keys('0821120')
-            num_digito_verificador = driver.find_element_by_id('fPP:numeroProcesso:numeroDigitoVerificador')
-            num_digito_verificador.send_keys('67')
-            num_processo_ano = driver.find_element_by_id('fPP:numeroProcesso:Ano')
-            num_processo_ano.send_keys('2017')
-            num_orgao_justica = driver.find_element_by_id('fPP:numeroProcesso:NumeroOrgaoJustica')
-            num_orgao_justica.send_keys('5004')
-            submete_pesquisa = driver.find_element_by_id('fPP:searchProcessos')
-            submete_pesquisa.click()
-            wait.until(EC.visibility_of_element_located((By.ID, '0821120-67.2017.8.20.5004')))
-            end = time.time()
-            tempo_pesquisa = end - start
-            zbx_enviar('PJe 1Grau', 'tempo_pesquisa', tempo_pesquisa)
-            print("Tempo pesquisa: " + str(tempo_pesquisa))
-
-            try:
-                # Logout
-                start = time.time()
-                logout = driver.find_element_by_id('desconectar')
-                logout.click()
-                wait.until(EC.visibility_of_element_located((By.ID, 'username')))
-                end = time.time()
-                tempo_logout = end - start
-                zbx_enviar('PJe 1Grau', 'tempo_logout', tempo_logout)
-                print('Tempo logout: ' + str(tempo_logout))
-                driver.quit()
-
-            except Exception:
-                zbx_enviar('PJe 1Grau', 'tempo_logout', 0)
-                driver.quit()
-
-        except Exception:
-            zbx_enviar('PJe 1Grau', 'tempo_pesquisa', 0)
-            print("A pesquisa falhou.")
-            driver.quit()
+        logging.info('Tempo login: ' + str(tempo_login))
 
     except Exception:
         zbx_enviar('PJe 1Grau', 'tempo_login', 0)
         zbx_enviar('PJe 1Grau', 'tempo_logout', 0)
         zbx_enviar('PJe 1Grau', 'tempo_pesquisa', 0)
-        print("O login falhou.")
+        logging.error("O login falhou.")
+        driver.quit()
+
+    try:
+        # Pesquisa
+        start = time.time()
+
+        # Navegação no menu para entrar na pesquisa
+        menu_processo = wait.until(EC.visibility_of_element_located((By.ID, '_1007_j_id70j_id71')))
+        ActionChains(driver).move_to_element(menu_processo).perform()
+        menu_pesquisar_n1 = wait.until(EC.visibility_of_element_located((By.ID, '_1008_j_id70j_id75')))
+        ActionChains(driver).move_to_element(menu_pesquisar_n1).perform()
+        menu_pesquisar_n2 = wait.until(EC.visibility_of_element_located((By.ID, '_1009_j_id70j_id76')))
+        ActionChains(driver).move_to_element(menu_pesquisar_n2).click().perform()
+        wait.until(EC.visibility_of_element_located((By.ID, 'fPP:consultaSearchFields_header')))
+
+        # Preenchimento do formulário de pesquisa
+        num_sequencial = driver.find_element_by_id('fPP:numeroProcesso:numeroSequencial')
+        num_sequencial.send_keys('0821120')
+        num_digito_verificador = driver.find_element_by_id('fPP:numeroProcesso:numeroDigitoVerificador')
+        num_digito_verificador.send_keys('67')
+        num_processo_ano = driver.find_element_by_id('fPP:numeroProcesso:Ano')
+        num_processo_ano.send_keys('2017')
+        num_orgao_justica = driver.find_element_by_id('fPP:numeroProcesso:NumeroOrgaoJustica')
+        num_orgao_justica.send_keys('5004')
+        submete_pesquisa = driver.find_element_by_id('fPP:searchProcessos')
+        submete_pesquisa.click()
+        wait.until(EC.visibility_of_element_located((By.ID, '0821120-67.2017.8.20.5004')))
+        end = time.time()
+        tempo_pesquisa = end - start
+        zbx_enviar('PJe 1Grau', 'tempo_pesquisa', tempo_pesquisa)
+        logging.info("Tempo pesquisa: " + str(tempo_pesquisa))
+
+    except Exception:
+        zbx_enviar('PJe 1Grau', 'tempo_pesquisa', 0)
+        logging.error("A pesquisa falhou.")
+
+    try:
+        # Logout
+        start = time.time()
+        logout = driver.find_element_by_id('desconectar')
+        logout.click()
+        wait.until(EC.visibility_of_element_located((By.ID, 'username')))
+        end = time.time()
+        tempo_logout = end - start
+        zbx_enviar('PJe 1Grau', 'tempo_logout', tempo_logout)
+        logging.info('Tempo logout: ' + str(tempo_logout))
+        driver.quit()
+
+    except Exception:
+        zbx_enviar('PJe 1Grau', 'tempo_logout', 0)
+        logging.error("O logout falhou.")
         driver.quit()
 
 
 def main():
     try:
         os.chdir(os.path.dirname(__file__))
-        credenciais = configparser.ConfigParser()
-        credenciais.read('credenciais.conf')
-        usuario = credenciais.get('Credenciais', 'usuario')
-        senha = credenciais.get('Credenciais', 'senha')
-        url_login = 'https://pje.tjrn.jus.br/pje1grau/'
-        pje1g(usuario,senha,url_login)
+        pje1g()
+        data_hora = time.localtime()
+        logging.info(time.strftime('%Y-%m-%d %H:%M:%S', data_hora))
         return 0
 
     except Exception:
+        logging.error("Não foi possível executar os testes.")
         return 1
 
 
