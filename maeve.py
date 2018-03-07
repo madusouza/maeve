@@ -10,7 +10,8 @@ import time
 import os
 import logging
 
-logging.basicConfig(filename='maeve.log', level=logging.NOTSET, filemode='w')
+arquivo_log = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'maeve.log')
+logging.basicConfig(filename=arquivo_log, level=logging.NOTSET, filemode='w')
 
 def setup():
     driver = webdriver.PhantomJS(service_args=['--ignore-ssl-errors=true'])
