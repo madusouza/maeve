@@ -13,6 +13,7 @@ import logging
 arquivo_log = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'maeve.log')
 logging.basicConfig(filename=arquivo_log, level=logging.NOTSET, filemode='w')
 
+
 def setup():
     driver = webdriver.PhantomJS(service_args=['--ignore-ssl-errors=true'])
     driver.set_window_size(1920, 1080)
@@ -48,7 +49,7 @@ def pje1g():
         password.submit()
 
         # Verifica se logou
-        driver.find_element_by_class_name('usuario-logado')
+        wait.until(EC.visibility_of_element_located((By.CLASS_NAME, 'usuario-logado')))
         end = time.time()
         tempo_login = end - start
         zbx_enviar('PJe 1Grau','tempo_login',tempo_login)
@@ -113,10 +114,59 @@ def pje1g():
         driver.quit()
 
 
+def correicao():
+    driver = setup()
+    wait = WebDriverWait(driver, 10)
+    config = configparser.ConfigParser()
+    config.read('maeve.conf')
+    usuario = config.get('Correicao', 'usuario')
+    senha = config.get('Correicao', 'senha')
+    url = config.get('Correicao', 'url')
+
+    try:
+        start = time.time()
+        driver.get(url)
+        user = driver.find_element_by_id('username')
+        user.send_keys(usuario)
+        password = driver.find_element_by_id('password')
+        password.send_keys(senha)
+        password.submit()
+
+        wait.until(EC.visibility_of_element_located((By.ID, 'minutes_left')))
+        end = time.time()
+        tempo_login = end - start
+        zbx_enviar('Correicao Virtual', 'tempo_login', tempo_login)
+        logging.info('Tempo login correição: ' + str(tempo_login))
+
+    except Exception:
+        zbx_enviar('Correicao Virtual', 'tempo_login', 0)
+        zbx_enviar('Correicao Virtual', 'tempo_logout', 0)
+        logging.error("O login correicao falhou.")
+        driver.quit()
+
+    try:
+        # Logout
+        start = time.time()
+        logout = driver.find_element_by_partial_link_text('Logout')
+        logout.click()
+        wait.until(EC.visibility_of_element_located((By.ID, 'username')))
+        end = time.time()
+        tempo_logout = end - start
+        zbx_enviar('Correicao Virtual', 'tempo_logout', tempo_logout)
+        logging.info('Tempo logout correicao: ' + str(tempo_logout))
+        driver.quit()
+
+    except Exception:
+        zbx_enviar('Correicao Virtual', 'tempo_logout', 0)
+        logging.error("O logout correicao falhou.")
+        driver.quit()
+
+
 def main():
     try:
         os.chdir(os.path.dirname(__file__))
-        pje1g()
+        # pje1g()
+        correicao()
         data_hora = time.localtime()
         logging.info(time.strftime('%Y-%m-%d %H:%M:%S', data_hora))
         return 0
