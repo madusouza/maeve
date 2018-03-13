@@ -9,9 +9,18 @@ import configparser
 import time
 import os
 import logging
+import logging.handlers
+
 
 arquivo_log = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'maeve.log')
-logging.basicConfig(filename=arquivo_log, level=logging.NOTSET, filemode='w')
+logging.basicConfig(
+    filename=arquivo_log,
+    level=logging.NOTSET,
+    format='[%(asctime)s] [%(name)s:%(lineno)d] %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+handler = logging.handlers.RotatingFileHandler(arquivo_log, maxBytes=100, backupCount=5)
+logging.getLogger().addHandler(handler)
 
 
 def setup():
@@ -165,10 +174,8 @@ def correicao():
 def main():
     try:
         os.chdir(os.path.dirname(__file__))
-        # pje1g()
-        correicao()
-        data_hora = time.localtime()
-        logging.info(time.strftime('%Y-%m-%d %H:%M:%S', data_hora))
+        pje1g()
+        # correicao()
         return 0
 
     except Exception:
