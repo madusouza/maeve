@@ -209,60 +209,11 @@ def pje2g():
         driver.quit()
 
 
-def correicao():
-    driver = setup()
-    wait = WebDriverWait(driver, 10)
-    config = configparser.ConfigParser()
-    config.read('maeve.conf')
-    usuario = config.get('Correicao', 'usuario')
-    senha = config.get('Correicao', 'senha')
-    url = config.get('Correicao', 'url')
-
-    try:
-        start = time.time()
-        driver.get(url)
-        user = driver.find_element_by_id('username')
-        user.send_keys(usuario)
-        password = driver.find_element_by_id('password')
-        password.send_keys(senha)
-        password.submit()
-
-        wait.until(EC.visibility_of_element_located((By.ID, 'minutes_left')))
-        end = time.time()
-        tempo_login = end - start
-        zbx_enviar('Correicao Virtual', 'tempo_login', tempo_login)
-        logging.info('Tempo login Correição: ' + str(tempo_login))
-
-    except Exception:
-        zbx_enviar('Correicao Virtual', 'tempo_login', 0)
-        zbx_enviar('Correicao Virtual', 'tempo_logout', 0)
-        logging.error("O login Correicao falhou.")
-        driver.quit()
-
-    try:
-        # Logout
-        start = time.time()
-        logout = driver.find_element_by_partial_link_text('Logout')
-        logout.click()
-        wait.until(EC.visibility_of_element_located((By.ID, 'username')))
-        end = time.time()
-        tempo_logout = end - start
-        zbx_enviar('Correicao Virtual', 'tempo_logout', tempo_logout)
-        logging.info('Tempo logout Correicao: ' + str(tempo_logout))
-        driver.quit()
-
-    except Exception:
-        zbx_enviar('Correicao Virtual', 'tempo_logout', 0)
-        logging.error("O logout Correicao falhou.")
-        driver.quit()
-
-
 def main():
     try:
         os.chdir(os.path.dirname(os.path.abspath(__file__)))
         pje1g()
         pje2g()
-        correicao()
         return 0
 
     except Exception:
