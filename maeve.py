@@ -34,7 +34,7 @@ def zbx_enviar(host,chave,valor):
     metrics = []
     m = ZabbixMetric(host,chave,valor)
     metrics.append(m)
-    zbx = ZabbixSender('t-kyoto')
+    zbx = ZabbixSender('s-verona')
     zbx.send(metrics)
 
 
